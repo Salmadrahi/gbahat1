@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>قاصف الجبهات | The Roaster</title>
+    
+    <!-- Fonts: 'Changa' (Bold & Modern) -->
+    <link href="https://fonts.googleapis.com/css2?family=Changa:wght@400;600;800&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Changa', 'sans-serif'],
+                    },
+                    colors: {
+                        roast: {
+                            black: '#120202',
+                            dark: '#2a0505',
+                            red: '#ff0000',
+                            orange: '#ff4d00',
+                            yellow: '#ffcc00',
+                        }
+                    },
+                    animation: {
+                        'shake': 'shake 0.5s cubic-bezier(.36,.07,.19,.97) both',
+                        'flame': 'flame 0.1s ease-in-out infinite alternate',
+                        'pop-in': 'popIn 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+                    },
+                    keyframes: {
+                        shake: {
+                            '10%, 90%': { transform: 'translate3d(-1px, 0, 0)' },
+                            '20%, 80%': { transform: 'translate3d(2px, 0, 0)' },
+                            '30%, 50%, 70%': { transform: 'translate3d(-4px, 0, 0)' },
+                            '40%, 60%': { transform: 'translate3d(4px, 0, 0)' }
+                        },
+                        flame: {
+                            '0%': { transform: 'scaleY(1)' },
+                            '100%': { transform: 'scaleY(1.1)' },
+                        },
+                        popIn: {
+                            '0%': { transform: 'scale(0.5)', opacity: 0 },
+                            '100%': { transform: 'scale(1)', opacity: 1 },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <script type="importmap">
+        {
+            "imports": {
+                "react": "https://esm.sh/react@18.2.0",
+                "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+                "lucide-react": "https://esm.sh/lucide-react@0.263.1"
+            }
+        }
+    </script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        body {
+            background-color: #120202;
+            color: #fff;
+            overflow-x: hidden;
+            background-image: radial-gradient(circle at 50% 10%, #4a0000 0%, #120202 60%);
+        }
+
+        /* Fire Text Effect */
+        .fire-text {
+            color: #fff;
+            text-shadow: 
+                0 0 5px #fff,
+                0 0 10px #fff,
+                0 0 20px #ff00de,
+                0 0 30px #ff00de,
+                0 0 40px #ff00de,
+                0 0 55px #ff00de,
+                0 0 75px #ff00de;
+            animation: flicker 1.5s infinite alternate;     
+        }
+
+        .neon-border {
+            box-shadow: 0 0 10px #ff0000, inset 0 0 20px #ff0000;
+        }
+
+        /* Comic Bubble Triangle */
+        .bubble-triangle {
+            width: 0; 
+            height: 0; 
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+            border-top: 20px solid white;
+            position: absolute;
+            bottom: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel" data-type="module">
+        import React, { useState, useEffect } from 'react';
+        import { createRoot } from 'react-dom/client';
+        import { 
+            Flame, Mic2, Skull, Settings, Key, X, 
+            Zap, Laugh, MessageCircle, Share2, AlertTriangle
+        } from 'lucide-react';
+
+        // --- Mock Roasts (Demo Mode) ---
+        const MOCK_ROASTS = [
+            "يا شيخ لو الذكاء عليه ضريبة، كان زمانك رجعت فلوس من الحكومة.",
+            "صوتك حلو بس لو تخليه صامت بيكون أحلى.",
+            "ما شاء الله عليك، كل ما تتكلم نسبة الذكاء في الغرفة تنزل 50%.",
+            "أنت الدليل الحي على أن الجاذبية الأرضية بتعاني عشان تمسكك.",
+            "ثقتك بنفسك زايدة، زي النت اللي بيفصل وأنت بتلعب رانكد."
+        ];
+
+        function App() {
+            // Inputs
+            const [input, setInput] = useState('');
+            const [result, setResult] = useState('');
+            
+            // System
+            const [isRoasting, setIsRoasting] = useState(false);
+            const [showSettings, setShowSettings] = useState(false);
+            const [apiKey, setApiKey] = useState(() => localStorage.getItem('gemini_api_key') || '');
+            const [burnLevel, setBurnLevel] = useState(0); // 0 to 100
+
+            const saveApiKey = (key) => {
+                setApiKey(key);
+                localStorage.setItem('gemini_api_key', key);
+            };
+
+            const handleRoast = async () => {
+                if (!input.trim()) return;
+                setIsRoasting(true);
+                setResult('');
+                setBurnLevel(0);
+
+                // Simulation of "Heating Up"
+                let heat = 0;
+                const heatInterval = setInterval(() => {
+                    heat += 5;
+                    if (heat > 100) heat = 100;
+                    setBurnLevel(heat);
+                }, 100);
+
+                // Demo Mode
+                if (!apiKey) {
+                    setTimeout(() => {
+                        clearInterval(heatInterval);
+                        setBurnLevel(100);
+                        const randomRoast = MOCK_ROASTS[Math.floor(Math.random() * MOCK_ROASTS.length)];
+                        setResult(randomRoast);
+                        setIsRoasting(false);
+                    }, 2500);
+                    return;
+                }
+
+                // AI Prompt
+                const prompt = `أنت شخصية كوميدية ساخرة جداً (Stand-up Comedian) متخصصة في "قصف الجبهات".
+                الجملة التي قالها الضحية: "${input}"
+                
+                المطلوب:
+                1. رد "قصفة" (Roast) قوية، مضحكة، وباللهجة العامية (بيضاء أو مصرية أو سعودية).
+                2. اجعلها قصيرة ولاذعة.
+                3. تجنب الشتائم البذيئة، ركز على السخرية الذكية والمضحكة.
+                
+                الرد فقط بدون مقدمات.`;
+
+                try {
+                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                    });
+                    const data = await response.json();
+                    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                    
+                    clearInterval(heatInterval);
+                    setBurnLevel(100);
+                    setResult(text);
+                } catch (error) {
+                    clearInterval(heatInterval);
+                    setResult("الجبهة قوية لدرجة أن السيرفر انحرق! (تأكد من مفتاح API)");
+                } finally {
+                    setIsRoasting(false);
+                }
+            };
+
+            return (
+                <div className="min-h-screen flex flex-col items-center justify-center p-4 relative font-sans overflow-hidden">
+                    
+                    {/* Background Embers */}
+                    <div className="fixed inset-0 pointer-events-none">
+                        <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-roast-orange rounded-full animate-ping"></div>
+                        <div className="absolute bottom-1/4 right-1/3 w-1 h-1 bg-roast-red rounded-full animate-ping delay-700"></div>
+                        <div className="absolute top-3/4 left-1/2 w-3 h-3 bg-roast-yellow rounded-full animate-ping delay-300"></div>
+                    </div>
+
+                    {/* Navbar */}
+                    <div className="absolute top-0 left-0 right-0 p-6 flex justify-between items-center z-40">
+                        <div className="flex items-center gap-2">
+                            <Flame className="w-8 h-8 text-roast-orange animate-flame" />
+                            <h1 className="text-3xl font-black text-white italic tracking-wider uppercase drop-shadow-[0_0_10px_rgba(255,0,0,0.8)]">
+                                قاصف <span className="text-roast-red">الجبهات</span>
+                            </h1>
+                        </div>
+                        <button onClick={() => setShowSettings(!showSettings)} className="bg-white/10 p-2 rounded-full hover:bg-white/20 transition-all">
+                            <Settings className="w-6 h-6 text-white" />
+                        </button>
+                    </div>
+
+                    {/* Settings Modal */}
+                    {showSettings && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4 animate-pop-in">
+                            <div className="bg-roast-dark border-2 border-roast-red p-6 rounded-2xl w-full max-w-md relative shadow-[0_0_30px_#ff0000]">
+                                <button onClick={() => setShowSettings(false)} className="absolute top-4 left-4 text-gray-400 hover:text-white"><X /></button>
+                                <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-roast-yellow">
+                                    <Key className="w-5 h-5" /> وقود القصف (API)
+                                </h3>
+                                <input 
+                                    type="password" 
+                                    value={apiKey}
+                                    onChange={(e) => saveApiKey(e.target.value)}
+                                    className="w-full bg-black border border-roast-red rounded-lg p-3 text-white outline-none focus:shadow-[0_0_10px_#ff0000] mb-2"
+                                    placeholder="ضع المفتاح هنا..."
+                                />
+                                <button onClick={() => setShowSettings(false)} className="mt-4 w-full bg-roast-red text-white py-2 rounded-lg font-bold hover:bg-red-600 transition-colors">حفظ</button>
+                            </div>
+                        </div>
+                    )}
+
+                    <main className="w-full max-w-2xl relative z-10 flex flex-col items-center">
+                        
+                        {/* Mic Icon (Visual) */}
+                        <div className="mb-6 relative group">
+                            <div className="absolute inset-0 bg-roast-red/20 rounded-full blur-xl group-hover:bg-roast-red/40 transition-all"></div>
+                            <div className="w-24 h-24 bg-gradient-to-br from-gray-800 to-black rounded-full border-4 border-roast-red flex items-center justify-center shadow-2xl relative z-10">
+                                <Mic2 className={`w-12 h-12 text-gray-300 ${isRoasting ? 'animate-bounce text-roast-orange' : ''}`} />
+                            </div>
+                            {/* Burn Level Bar */}
+                            {isRoasting && (
+                                <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 w-32 h-2 bg-gray-800 rounded-full overflow-hidden">
+                                    <div className="h-full bg-gradient-to-r from-yellow-500 to-red-600 transition-all duration-100" style={{width: `${burnLevel}%`}}></div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Input Area */}
+                        <div className="w-full bg-roast-dark/80 border border-roast-red/30 p-6 rounded-3xl mb-8 backdrop-blur-sm relative">
+                            <label className="text-roast-yellow font-bold mb-2 block flex items-center gap-2">
+                                <Skull className="w-5 h-5" /> الضحية يقول:
+                            </label>
+                            <textarea 
+                                value={input}
+                                onChange={(e) => setInput(e.target.value)}
+                                placeholder="اكتب جملة هنا لنجعلها نكتة... (مثلاً: أنا أغنى واحد في الشلة)"
+                                className="w-full h-24 bg-black/50 border border-white/10 rounded-xl p-4 text-lg text-white outline-none focus:border-roast-red focus:shadow-[0_0_15px_rgba(255,0,0,0.3)] transition-all resize-none"
+                            ></textarea>
+                            
+                            <button 
+                                onClick={handleRoast}
+                                disabled={isRoasting || !input}
+                                className={`
+                                    w-full mt-4 py-4 rounded-xl font-black text-xl uppercase tracking-widest transition-all transform active:scale-95
+                                    ${isRoasting ? 'bg-gray-800 text-gray-500 cursor-not-allowed' : 'bg-gradient-to-r from-roast-red to-roast-orange text-white hover:shadow-[0_0_30px_#ff0000] hover:-translate-y-1'}
+                                `}
+                            >
+                                {isRoasting ? 'جاري التحميل...' : 'اقصف الجبهة! 🔥'}
+                            </button>
+                        </div>
+
+                        {/* Result Area */}
+                        {result && (
+                            <div className="w-full animate-pop-in relative">
+                                {/* Character/Avatar */}
+                                <div className="absolute -top-12 -left-4 bg-roast-yellow text-black font-bold px-3 py-1 rounded-full transform -rotate-12 border-2 border-white shadow-lg z-20">
+                                    القاصف 🤖
+                                </div>
+
+                                <div className="bg-white text-black p-6 rounded-3xl relative shadow-[0_0_50px_rgba(255,255,255,0.2)] animate-shake">
+                                    <div className="text-4xl absolute -top-4 -right-4">💥</div>
+                                    
+                                    <h2 className="text-2xl md:text-3xl font-black text-center leading-relaxed">
+                                        "{result}"
+                                    </h2>
+
+                                    {/* Action Buttons */}
+                                    <div className="mt-6 flex justify-center gap-4 border-t border-gray-200 pt-4">
+                                        <button 
+                                            onClick={() => navigator.clipboard.writeText(result)}
+                                            className="flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-roast-red transition-colors"
+                                        >
+                                            <Share2 className="w-4 h-4" /> نسخ القصفة
+                                        </button>
+                                        <button 
+                                            onClick={() => setResult('')}
+                                            className="flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-roast-red transition-colors"
+                                        >
+                                            <Zap className="w-4 h-4" /> قصفة جديدة
+                                        </button>
+                                    </div>
+
+                                    {/* Triangle Tail */}
+                                    <div className="bubble-triangle"></div>
+                                </div>
+                                
+                                <div className="mt-8 text-center text-roast-orange/60 text-sm font-bold animate-pulse">
+                                    🔥🔥🔥 OOOOOOOHHHHHHH 🔥🔥🔥
+                                </div>
+                            </div>
+                        )}
+
+                        {!result && !isRoasting && (
+                            <div className="text-center opacity-30 mt-4">
+                                <Laugh className="w-16 h-16 mx-auto mb-2" />
+                                <p className="text-sm">نحن لا نتحمل مسؤولية فقدان الثقة بالنفس</p>
+                            </div>
+                        )}
+
+                    </main>
+                </div>
+            );
+        }
+
+        const root = createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
